@@ -7,10 +7,10 @@ import json
 import subprocess
 from pathlib import Path
 import argparse
-from typing import Optional
-import sys # Added for sys.exit
+import sys
+import re
 
-# --- Core Functions (call_ollama and load_prompt are unchanged) ---
+# --- Core Functions ---
 
 def call_ollama(prompt: str, model: str) -> str:
     """Call Ollama API locally."""
@@ -35,8 +35,6 @@ def call_ollama(prompt: str, model: str) -> str:
 
 
 def main():
-    # ... (Keep your existing argparse setup)
-    # ... (args = parser.parse_args() is the same)
     parser = argparse.ArgumentParser(
         description='Interact with a local Ollama instance using a two-pass system.'
     )
@@ -65,6 +63,13 @@ def main():
         default='pass2.txt',
         help='Path to the prompt file for Pass 2 (Narrative Generation).'
     )
+    parser.add_argument(
+        '--no-post-processing',
+        action='store_false',
+        dest='apply_post_processing',
+        help='Disable all post-processing (text replacement and newline formatting) to output the raw LLM response.'
+    )
+    
     args = parser.parse_args()
     
     # --- Load Notes (Same as before) ---
@@ -76,57 +81,58 @@ def main():
     
     # --- PASS 1: FACT EXTRACTION ---
     print("--- Starting Pass 1: Fact Extraction ---")
-    
-    # Load the *new* pass 1 prompt template
-    # You could hardcode this or add a new arg like --prompt-file-pass1
     pass1_prompt_path = Path(args.prompt_file_pass1) 
     if not pass1_prompt_path.exists():
         print(f"Error: Pass 1 prompt not found at: {pass1_prompt_path}")
         sys.exit(1)
-        
     pass1_template = pass1_prompt_path.read_text(encoding='utf-8')
-    
-    # Inject raw notes into the first template
     pass1_final_prompt = pass1_template.replace("{{RAW_NOTES}}", raw_notes)
-    
-    # Call Ollama for Pass 1
     observed_facts = call_ollama(pass1_final_prompt, args.model)
-    
     if not observed_facts:
         print("Error: Pass 1 (Fact Extraction) failed to return a response.")
         sys.exit(1)
-        
     print(f"Pass 1 Complete. Facts: {observed_facts}")
 
     # --- PASS 2: NARRATIVE GENERATION ---
     print("--- Starting Pass 2: Narrative Generation ---")
-    
-    # Load the *new* pass 2 prompt template
     pass2_prompt_path = Path(args.prompt_file_pass2)
     if not pass2_prompt_path.exists():
         print(f"Error: Pass 2 prompt not found at: {pass2_prompt_path}")
         sys.exit(1)
-        
     pass2_template = pass2_prompt_path.read_text(encoding='utf-8')
-    
-    # Inject the *result* of Pass 1 into the second template
     pass2_final_prompt = pass2_template.replace("{{OBSERVED_FACTS}}", observed_facts)
-    
-    # Call Ollama for Pass 2
     final_assessment = call_ollama(pass2_final_prompt, args.model)
-
     if not final_assessment:
         print("Error: Pass 2 (Narrative Generation) failed to return a response.")
         sys.exit(1)
-
     print(f"Pass 2 Complete. Assessment: {final_assessment}")
 
-    # --- Save Final Output (Same as before) ---
+    # --- POST-PROCESSING ---
+    
+    # Start with the raw LLM output
+    processed_assessment = final_assessment
+    
+    # args.apply_post_processing is True by default
+    if args.apply_post_processing:
+        print("--- Applying Post-Processing ---")
+                
+        # 1. Add newlines
+        print("Adding newline formatting...")
+        # Use regex to add a newline before any timestamp (HH:MM)
+        # that is preceded by a space (to skip the very first line).
+        # We also strip any whitespace at the start, just in case.
+        processed_assessment = re.sub(r' (\d{2}:\d{2})', r'\n\1', processed_assessment)
+        processed_assessment = processed_assessment.strip()
+
+    else:
+        print("--- Skipping Post-Processing (Raw LLM Output) ---")
+        # No action needed, processed_assessment already holds the raw output
+
+    # --- Save Final Output ---
     output_file_path = Path(args.output_file) if args.output_file else Path('shifty_output.txt')
     with open(output_file_path, 'w', encoding='utf-8') as f:
-        f.write(final_assessment)
+        f.write(processed_assessment)
     print(f"--- SUCCESS: Final assessment saved to: {output_file_path} ---")
 
 if __name__ == "__main__":
     main()
-
