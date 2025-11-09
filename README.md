@@ -144,6 +144,19 @@ Use the `--model` flag to specify a different Ollama model.
 python3 shifty.py --notes-file barry.md --model llama3:8b
 ```
 
+### Setting Model via Environment Variable (shifty.sh)
+
+When using the `shifty.sh` batch script, you can specify the Ollama model by setting the `SHIFTY_MODEL` environment variable. If this variable is set, `shifty.sh` will pass its value to `shifty.py`. If `SHIFTY_MODEL` is not set, `shifty.py` will use its internal default model (`qwen2.5:32b`).
+
+```bash
+# Example: Set the model for a single run
+SHIFTY_MODEL="llama3:8b" ./shifty.sh
+
+# Example: Export the model for the current session
+export SHIFTY_MODEL="llama3:8b"
+./shifty.sh
+```
+
 ### Specifying Custom Prompt Files
 
 Shifty uses two prompt files for its two-pass system. You can point to your own custom prompt files using the `--prompt-file-pass1` and `--prompt-file-pass2` arguments.
