@@ -11,6 +11,79 @@ The process works in two main stages:
 
 The `shifty.sh` script automates this process for all `.md` files in the directory.
 
+## Note Formatting
+
+The raw notes files are expected to follow a specific format for successful processing. Each log entry must start with a timestamp, followed by an assistance level code on the next line, and then any detailed notes.
+
+- Each log entry starts with a timestamp (e.g., `07:32 Jake threw a cushion at the fan`).
+- The line *immediately after* the timestamp is the Assistance Level (e.g., `l8`, `lx`, `l_`).
+- All lines *after* the level (until the next timestamp) are details.
+
+### Assistance Level Codes (l#)
+
+-   `l8`: Completely Independent
+-   `l7`: Mostly Independent
+-   `l6`: Minor Verbal Prompts
+-   `l5`: Verbal Instruction Required
+-   `l4`: Modelled
+-   `l3`: Significant Assistance
+-   `l1`: Refused
+-   `l0`: Not Applicable
+-   `l_` or `lx`: Unknown/Missing Level
+
+### Amount/Quantity Codes (a#)
+
+-   `a_` or `ax`: Unknown/Missing Amount
+
+### Example Notes File
+
+```
+08:15 Woke up and got out of bed
+l8
+
+08:30 Morning hygiene routine
+l6
+Needed a verbal prompt to brush teeth.
+
+09:00 Breakfast
+l8
+Ate a bowl of cereal with milk and a glass of orange juice.
+ax
+
+09:30 Watched morning cartoons
+l0
+
+10:15 Arts and Crafts
+l5
+Required step-by-step instructions to complete the craft.
+
+11:00 Walk in the park
+l8
+Walked for 20 minutes without assistance.
+
+12:30 Lunch
+l8
+Ate a sandwich and an apple.
+
+13:15 Nap
+l0
+
+15:00 Snack time
+l8
+Ate a yogurt.
+
+15:30 Played with building blocks
+l7
+Mostly independent, but needed help to build a taller tower.
+
+16:45 Cleaned up toys
+l6
+Needed verbal prompts to put all the toys away.
+
+17:30 Prepared for dinner
+l0
+```
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed and running:
