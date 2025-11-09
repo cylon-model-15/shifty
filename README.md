@@ -38,6 +38,8 @@ The raw notes files are expected to follow a specific format for successful proc
 ### Example Notes File
 
 ```
+### Sam
+
 08:15 Woke up and got out of bed
 l8
 
