@@ -7,6 +7,11 @@ echo "Starting conversion..."
 
 # Loop through all files ending with .md in the current directory
 for md_file in *.md; do
+    # Skip README.md
+    if [ "$md_file" == "README.md" ]; then
+        continue
+    fi
+
     # Check if the file actually exists (avoids errors if no .md files are found)
     if [ -f "$md_file" ]; then
         # Get the filename without the .md extension
