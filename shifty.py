@@ -10,7 +10,10 @@ import argparse
 import sys
 import re
 
+from shifty_linter import lint_notes, Colors
+
 # --- Core Functions ---
+
 
 
 def call_ollama(prompt: str, model: str) -> str:
@@ -73,14 +76,33 @@ def main():
         action='store_false',
         dest='apply_post_processing',
         help='Disable all post-processing (text replacement and newline formatting) to output the raw LLM response.')
+    parser.add_argument(
+        '--force',
+        action='store_true',
+        help='Force regeneration of the output file, ignoring the cache.'
+    )
 
     args = parser.parse_args()
 
-    # --- Load Notes (Same as before) ---
+    # --- Determine Output Path ---
+    output_file_path = Path(args.output_file) if args.output_file else Path('shifty_output.txt')
+
+    # --- Cache Check ---
+    if output_file_path.exists() and not args.force:
+        print(f"{Colors.OKBLUE}--- SKIPPING: Output file already exists at: {output_file_path} ---{Colors.ENDC}")
+        print(f"{Colors.OKBLUE}Use --force to regenerate.{Colors.ENDC}")
+        sys.exit(0)
+
+    # --- Load Notes and Lint ---
     notes_file_path = Path(args.notes_file)
     if not notes_file_path.exists():
         print(f"Error: Notes file not found at: {notes_file_path}")
         sys.exit(1)
+    
+    # Run the linter on the notes file before proceeding
+    if not lint_notes(notes_file_path):
+        sys.exit(1) # Exit if linting fails
+
     raw_notes = notes_file_path.read_text(encoding='utf-8')
 
     # --- PASS 1: FACT EXTRACTION ---
@@ -147,7 +169,6 @@ def main():
         # No action needed, processed_assessment already holds the raw output
 
     # --- Save Final Output ---
-    output_file_path = Path(args.output_file) if args.output_file else Path('shifty_output.txt')
     with open(output_file_path, 'w', encoding='utf-8') as f:
         f.write(processed_assessment)
     print(f"--- SUCCESS: Final assessment saved to: {output_file_path} ---")
