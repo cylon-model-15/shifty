@@ -130,7 +130,7 @@ def main():
         sys.exit(1)
     pass1_template = pass1_prompt_path.read_text(encoding='utf-8')
     pass1_final_prompt = pass1_template.replace("{{RAW_NOTES}}", raw_notes)
-    observed_facts = call_ollama(pass1_final_prompt, args.model)
+    observed_facts = call_ollama(pass1_final_prompt, model)
     if not observed_facts:
         print("Error: Pass 1 (Fact Extraction) failed to return a response.")
         sys.exit(1)
@@ -171,7 +171,7 @@ def main():
     # Inject the observed facts
     pass2_final_prompt = pass2_template.replace("{{OBSERVED_FACTS}}", observed_facts)
 
-    final_assessment = call_ollama(pass2_final_prompt, args.model)
+    final_assessment = call_ollama(pass2_final_prompt, model)
     if not final_assessment:
         print("Error: Pass 2 (Narrative Generation) failed to return a response.")
         sys.exit(1)
