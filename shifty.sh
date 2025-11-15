@@ -5,15 +5,16 @@ set -e
 
 echo "Starting conversion..."
 
-# Construct the model argument if SHIFTY_MODEL is set
-MODEL_ARGS=()
-if [ -n "$SHIFTY_MODEL" ]; then
-    MODEL_ARGS+=(--model "$SHIFTY_MODEL")
-    echo "Using model from SHIFTY_MODEL environment variable: $SHIFTY_MODEL"
-else
-    echo "SHIFTY_MODEL environment variable not set. shifty.py will use its default model."
-fi
+# --- Argument Construction ---
+# Initialize an empty array for arguments
+CMD_ARGS=()
 
+# Pass the names of the environment variables to the Python script
+# The Python script will then read these environment variables
+CMD_ARGS+=(--model-env-var "SHIFTY_MODEL")
+CMD_ARGS+=(--style-guide-env-var "SHIFTY_STYLE_GUIDE")
+
+# --- File Processing Loop ---
 # Loop through all files ending with .md in the current directory
 for md_file in *.md; do
     # Skip README.md
@@ -26,15 +27,15 @@ for md_file in *.md; do
         # Get the filename without the .md extension
         base_name="${md_file%.md}"
         
-        # Define the new output filename
-        txt_file="${base_name}.txt"
+        # Define the new output filename with the .shifty extension
+        output_file="${base_name}.shifty"
         
         # Print what is being processed
-        echo "Processing: $md_file  ->  $txt_file"
+        echo "Processing: $md_file  ->  $output_file"
         
-        # Run python script
+        # Run python script with all constructed arguments
         # Quotes are used to handle filenames with spaces
-        python3 shifty.py --notes-file "$md_file" --output-file "$txt_file" "${MODEL_ARGS[@]}"
+        python3 shifty.py --notes-file "$md_file" --output-file "$output_file" "${CMD_ARGS[@]}"
     fi
 done
 

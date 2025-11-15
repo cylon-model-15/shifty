@@ -1,0 +1,14 @@
+# Ignore generated shifty files
+*.shifty
+
+# Ignore specific markdown files that are generated or temporary
+# (Assuming you want to keep your raw input .md files tracked)
+# If you want to ignore all .md files except README.md, uncomment the following:
+*.md
+!README.md
+
+# Ignore common Python build/dependency files
+__pycache__/
+*.pyc
+.venv/
+venv/

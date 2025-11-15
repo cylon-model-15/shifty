@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 import argparse
 import sys
-import re
+import os
 
 from shifty_linter import lint_notes, Colors
 
@@ -52,13 +52,21 @@ def main():
         help='Ollama model to use (default: qwen2.5:32b)'
     )
     parser.add_argument(
+        '--model-env-var',
+        help='Optional name of an environment variable containing the model name.'
+    )
+    parser.add_argument(
         '--output-file',
-        help='Path to save the final assessment. Defaults to ollama_output.txt.'
+        help='Path to save the final assessment. Defaults to shifty_output.shifty.'
     )
     parser.add_argument(
         '--style-guide-file',
         default='style_guide.txt',
         help='Optional path to a .txt file containing a style guide example for Pass 2.'
+    )
+    parser.add_argument(
+        '--style-guide-env-var',
+        help='Optional name of an environment variable containing the path to the style guide file.'
     )
     # Optional arguments for custom prompt files
     parser.add_argument(
@@ -84,8 +92,17 @@ def main():
 
     args = parser.parse_args()
 
+    # --- Determine Model ---
+    model = args.model
+    if args.model_env_var:
+        model_from_env = os.environ.get(args.model_env_var)
+        if model_from_env:
+            model = model_from_env
+        else:
+            print(f"Warning: Environment variable '{args.model_env_var}' not set. Falling back to default model.")
+
     # --- Determine Output Path ---
-    output_file_path = Path(args.output_file) if args.output_file else Path('shifty_output.txt')
+    output_file_path = Path(args.output_file) if args.output_file else Path('shifty_output.shifty')
 
     # --- Cache Check ---
     if output_file_path.exists() and not args.force:
@@ -129,13 +146,24 @@ def main():
 
     # --- Load Optional Style Guide ---
     style_guide_text = ""
-    if args.style_guide_file:
-        style_path = Path(args.style_guide_file)
-        if style_path.exists():
-            print(f"--- Loading optional style guide from: {style_path} ---")
-            style_guide_text = style_path.read_text(encoding='utf-8')
+    style_guide_path = None
+
+    if args.style_guide_env_var:
+        style_guide_path_str = os.environ.get(args.style_guide_env_var)
+        if style_guide_path_str:
+            style_guide_path = Path(style_guide_path_str)
         else:
-            print(f"Warning: Style guide file not found at: {style_path}. Proceeding without it.")
+            print(f"Warning: Environment variable '{args.style_guide_env_var}' not set. Falling back to --style-guide-file.")
+
+    if not style_guide_path and args.style_guide_file:
+        style_guide_path = Path(args.style_guide_file)
+
+    if style_guide_path:
+        if style_guide_path.exists():
+            print(f"--- Loading optional style guide from: {style_guide_path} ---")
+            style_guide_text = style_guide_path.read_text(encoding='utf-8')
+        else:
+            print(f"Warning: Style guide file not found at: {style_guide_path}. Proceeding without it.")
 
     # Inject the style guide (or an empty string) into the template
     pass2_template = pass2_template.replace("{{OPTIONAL_STYLE_GUIDE}}", style_guide_text)
@@ -156,14 +184,10 @@ def main():
 
     # args.apply_post_processing is True by default
     if args.apply_post_processing:
-        print("--- Applying Post-Processing ---")
-        # 1. Add newlines
-        print("Adding newline formatting...")
-        # Use regex to add a newline before any timestamp (HH:MM)
-        # that is preceded by a space (to skip the very first line).
-        # We also strip any whitespace at the start, just in case.
-        processed_assessment = re.sub(r' (\d{2}:\d{2})', r'\n\1', processed_assessment)
-        processed_assessment = processed_assessment.strip()
+        print("--- Post-Processing (currently disabled) ---")
+        # Post-processing is currently disabled in favor of prompt-based formatting.
+        # Future post-processing steps could be added here.
+        pass
     else:
         print("--- Skipping Post-Processing (Raw LLM Output) ---")
         # No action needed, processed_assessment already holds the raw output

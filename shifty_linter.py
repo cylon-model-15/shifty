@@ -25,11 +25,11 @@ VALID_LEVELS = {
     'l8', 'l7', 'l6', 'l5', 'l4', 'l3', 'l1', 'l0', 'lx', 'l_'
 }
 
-# Regex for a valid 24-hour timestamp (HH:MM)
-TIMESTAMP_RE = re.compile(r'^\d{2}:\d{2}')
+# Regex for a valid 24-hour timestamp (HH:MM) followed by optional activity text
+TIMESTAMP_ACTIVITY_RE = re.compile(r'^\d{2}:\d{2}(?:\s+.*)?$')
 
 # Regex for an AMBIGUOUS 12-hour timestamp (H:MM) - this is a warning
-AMBIGUOUS_TIMESTAMP_RE = re.compile(r'^\d{1}:\d{2}')
+AMBIGUOUS_TIMESTAMP_RE = re.compile(r'^\d{1}:\d{2}(?:\s+.*)?$')
 
 # Regex for the participant heading
 PARTICIPANT_RE = re.compile(r'^\s*#{1,3}\s+([A-Za-z]+)\s*$')
@@ -70,16 +70,20 @@ def lint_notes(file_path: Path) -> bool:
     warnings = []
     
     # State machine variables
-    # State can be 'START', 'EXPECT_TIMESTAMP', 'EXPECT_LEVEL', 'EXPECT_DETAILS'
+    # State can be 'START', 'EXPECT_TIMESTAMP_AND_ACTIVITY', 'EXPECT_LEVEL', 'EXPECT_DETAILS'
     state = 'START'
     last_timestamp = "00:00"
 
     for i, line in enumerate(lines):
         line_number = i + 1
+        original_line = line # Keep original line for error reporting
         line = line.strip()
 
         if not line:
-            continue  # Skip empty lines
+            # Blank lines are allowed, but reset state if we were expecting details
+            if state == 'EXPECT_DETAILS':
+                state = 'EXPECT_TIMESTAMP_AND_ACTIVITY'
+            continue
 
         # --- State: START ---
         # We must find a participant heading first.
@@ -87,21 +91,20 @@ def lint_notes(file_path: Path) -> bool:
             match = PARTICIPANT_RE.match(line)
             if match:
                 print(f"INFO: Found participant: {Colors.BOLD}{match.group(1)}{Colors.ENDC}")
-                state = 'EXPECT_TIMESTAMP'
+                state = 'EXPECT_TIMESTAMP_AND_ACTIVITY'
                 continue
             else:
-                errors.append(f"L{line_number}: {Colors.FAIL}Critical: File must start with a participant heading (e.g., '### Jake'). Found: '{line}'{Colors.ENDC}")
-                state = 'EXPECT_TIMESTAMP' # Try to recover
+                errors.append(f"L{line_number}: {Colors.FAIL}Critical: File must start with a participant heading (e.g., '### Jake'). Found: '{original_line.strip()}'{Colors.ENDC}")
+                state = 'EXPECT_TIMESTAMP_AND_ACTIVITY' # Try to recover
         
-        # --- Check for Timestamps ---
-        # A timestamp can start a new block at any time (except after another timestamp)
-        is_timestamp = TIMESTAMP_RE.match(line)
+        # --- Check for Timestamps and Activity ---
+        is_timestamp_activity = TIMESTAMP_ACTIVITY_RE.match(line)
         is_ambiguous_timestamp = AMBIGUOUS_TIMESTAMP_RE.match(line)
 
-        if is_timestamp or is_ambiguous_timestamp:
+        if is_timestamp_activity:
             if state == 'EXPECT_LEVEL':
-                errors.append(f"L{line_number}: {Colors.FAIL}Critical: Found timestamp but expected a level code for the previous entry.{Colors.ENDC}")
-
+                errors.append(f"L{line_number}: {Colors.FAIL}Critical: Found timestamp/activity but expected a level code for the previous entry.{Colors.ENDC}")
+            
             if is_ambiguous_timestamp:
                 warnings.append(f"L{line_number}: {Colors.WARNING}Warning: Ambiguous 12-hour timestamp: '{line.split(' ', 1)[0]}'. Use 24-hour format (e.g., 19:15) to avoid time-guessing errors.{Colors.ENDC}")
             
@@ -121,14 +124,14 @@ def lint_notes(file_path: Path) -> bool:
                 state = 'EXPECT_DETAILS'
                 continue
             else:
-                errors.append(f"L{line_number}: {Colors.FAIL}Critical: Expected a valid level code (e.g., l8, lx) but found: '{line}'{Colors.ENDC}")
+                errors.append(f"L{line_number}: {Colors.FAIL}Critical: Expected a valid level code (e.g., l8, lx) but found: '{original_line.strip()}'{Colors.ENDC}")
                 state = 'EXPECT_DETAILS' # Try to recover
                 continue
         
-        # --- State: EXPECT_TIMESTAMP ---
-        # If we are in this state, we haven't found the first timestamp yet.
-        if state == 'EXPECT_TIMESTAMP':
-            errors.append(f"L{line_number}: {Colors.FAIL}Critical: Expected a timestamp (HH:MM) but found detail line: '{line}'{Colors.ENDC}")
+        # --- State: EXPECT_TIMESTAMP_AND_ACTIVITY ---
+        # If we are in this state, we haven't found the first timestamp yet or we are between entries.
+        if state == 'EXPECT_TIMESTAMP_AND_ACTIVITY':
+            errors.append(f"L{line_number}: {Colors.FAIL}Critical: Expected a timestamp and activity (HH:MM Activity) but found: '{original_line.strip()}'{Colors.ENDC}")
             state = 'EXPECT_DETAILS' # Try to recover
             continue
             
@@ -140,7 +143,12 @@ def lint_notes(file_path: Path) -> bool:
 
     # --- Final checks after loop ---
     if state == 'EXPECT_LEVEL':
-        errors.append(f"L{len(lines)}: {Colors.FAIL}Critical: File ends on a timestamp. A level code is missing.{Colors.ENDC}")
+        errors.append(f"L{len(lines)}: {Colors.FAIL}Critical: File ends on a timestamp/activity. A level code is missing.{Colors.ENDC}")
+    elif state == 'EXPECT_TIMESTAMP_AND_ACTIVITY':
+        # This means the file ended after the heading but before any entries
+        if not errors: # Only add if no other critical errors already reported for start
+            errors.append(f"L{len(lines)}: {Colors.FAIL}Critical: File ends unexpectedly after participant heading. No entries found.{Colors.ENDC}")
+
 
     print("---")
     
