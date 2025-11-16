@@ -15,9 +15,11 @@ The `shifty.sh` script automates this process for all `.md` files in the directo
 
 -   **Two-Pass System**: Separates fact extraction from narrative generation for more reliable and consistent output.
 -   **Customizable Style Guides**: Control the final output format by providing a style guide. Change the summary structure, add or remove sections, and tailor the output without editing the core prompts.
--   **Configurable**: Set the Ollama model and style guide via environment variables for easy integration into different workflows.
+-   **Configurable**: Set the Ollama model, style guide, and more via environment variables for easy integration into different workflows.
+-   **Shorthand Expansion**: Define custom codes (e.g., `l8`, `j1`) in a JSON file that the LLM will expand into full-text descriptions, making note-taking faster and more powerful.
 -   **Note Linter**: Includes `shifty_linter.py` to automatically check your notes for formatting errors before processing, preventing common issues.
 -   **Caching**: Automatically skips processing if an up-to-date output file already exists. Use the `--force` flag to regenerate.
+-   **Configurable Logging**: Control the verbosity of output using the `-v` or `--verbose` flag.
 -   **Standardized Output**: Generates files with a `.shifty` extension to keep outputs organized.
 
 ## Note Formatting
@@ -60,7 +62,7 @@ Ate a bowl of cereal with milk and a glass of orange juice.
 
 ### Batch Processing with `shifty.sh` (Recommended)
 
-This is the simplest method. It finds all `.md` files in the current directory (except `README.md`) and runs the two-pass process on each, saving the output to a corresponding `.shifty` file.
+This is the simplest method. It finds all `.md` files in the current directory (except `README.md`) and runs the two-pass process on each, saving the output to a corresponding `.shifty` file. If no `.md` files are found, it will exit with a message.
 
 1.  Make sure your notes are in `.md` files (e.g., `sam.md`, `jane.md`).
 2.  Make the script executable:
@@ -103,39 +105,51 @@ Shifty is a tool to accelerate the report-writing process, not to replace the cr
 
 ## Customization
 
-### Configuring the Model and Style Guide (Environment Variables)
+### Configuring via Environment Variables
 
-The `shifty.sh` script uses environment variables for configuration. This is the recommended way to customize behavior.
+The `shifty.py` script directly reads several environment variables for configuration. This is the recommended way to customize behavior for batch processing with `shifty.sh`.
 
--   `SHIFTY_MODEL`: Sets the Ollama model to use.
--   `SHIFTY_STYLE_GUIDE`: Sets the path to a custom style guide file.
+-   `SHIFTY_MODEL`: Sets the Ollama model to use (e.g., `llama3:8b`).
+-   `SHIFTY_STYLE_GUIDE`: Sets the path to a custom style guide file (e.g., `my_style_guide.txt`).
+-   `SHIFTY_SHORTHAND`: Sets the path to a custom shorthand definition file (e.g., `my_shorthand.json`).
+-   `OLLAMA_HOST`: Sets the URL for the Ollama API (e.g., `http://localhost:11434`).
 
-```bash
-# Example: Use a different model and a custom style guide for a single run
-SHIFTY_MODEL="llama3:8b" SHIFTY_STYLE_GUIDE="my_style_guide.txt" ./shifty.sh
-
-# Example: Export the variables for the current session
-export SHIFTY_MODEL="llama3:8b"
-export SHIFTY_STYLE_GUIDE="my_style_guide.txt"
-./shifty.sh
-```
-
-If these variables are not set, the script defaults to the model `qwen2.5:32b` and the `style_guide.txt` file.
+If these variables are not set, the script uses sensible defaults (e.g., `shorthand.json`).
 
 ### Command-line Arguments (`shifty.py`)
 
-When running `shifty.py` directly, you can use command-line arguments for customization.
+When running `shifty.py` directly, you can use command-line arguments for customization. These arguments take precedence over environment variables.
 
 -   `--model`: Specify a different Ollama model.
 -   `--style-guide-file`: Path to a custom style guide.
+-   `--shorthand-file`: Path to a custom shorthand definition file.
+-   `--ollama-host`: Specify the Ollama host URL.
 -   `--prompt-file-pass1`, `--prompt-file-pass2`: Paths to custom prompt files.
 -   `--force`: Force regeneration of the output file, ignoring the cache.
+-   `-v`, `--verbose`: Enable verbose, debug-level logging output.
+
+### Shorthand Definitions (`shorthand.json`)
+
+You can create a `shorthand.json` file to define custom codes that the LLM will expand into full-text descriptions. This is useful for standardizing common notes, like assistance levels or recurring activities.
+
+The file should be a simple JSON object where the key is your shorthand code and the value is the text it should expand to.
+
+**Example `shorthand.json`:**
+```json
+{
+    "l8": "Completely Independent",
+    "l7": "Mostly Independent",
+    "l6": "Minor Verbal Prompts",
+    "j1": "Took a 1-hour afternoon nap."
+}
+```
+The LLM is instructed to use these definitions to interpret the raw notes, giving it valuable context for generating the final narrative.
 
 ### Customizing Prompts and Style Guides
 
 -   **Pass 1 Prompt (`pass1.txt`)**: This file must contain the `{{RAW_NOTES}}` placeholder.
--   **Pass 2 Prompt (`pass2.txt`)**: This file must contain `{{OBSERVED_FACTS}}` and `{{OPTIONAL_STYLE_GUIDE}}` placeholders. The content of your style guide will be injected into the `{{OPTIONAL_STYLE_GUIDE}}` location.
--   **Style Guide (`style_guide.txt`)**: This file contains the desired format for the final output. You can create your own and point to it using the `SHIFTY_STYLE_GUIDE` environment variable or the `--style-guide-file` argument.
+-   **Pass 2 Prompt (`pass2.txt`)**: This file must contain `{{OBSERVED_FACTS}}`, `{{OPTIONAL_STYLE_GUIDE}}`, and `{{SHORTHAND_DEFINITIONS}}` placeholders.
+-   **Style Guide (`style_guide.txt`)**: This file contains the desired format for the final output. You can create your own and point to it using the environment variables or command-line arguments.
 
 ## Model Performance
 

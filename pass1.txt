@@ -27,9 +27,9 @@ You are an AI assistant that extracts structured data from shorthand shift notes
 15:34 arrived
 lx
 
-15:41 Barry arranging information sheets on Dre's fridge. 
+15:41 Barry arranging information sheets on Jane's fridge. 
 l1
-Staff asked Barry if he's allowed to play with Dre's fridge. Staff asked Barry not to play with Dre's fridge, as there is potentially confidential information contained within the paperwork on the fridge. Also it's Dre's and staff wanted to ensure that boundary was respected. Barry said he didn't want to (i.e stop what he was doing). Staff asked if that made it ok to do what he was doing. He repeated "don't want to" several times before leaving the fridge and going to his fridge as suggested. It felt as though Barry was testing to see what he could get away with
+Staff asked Barry if he's allowed to play with Jane's fridge. Staff asked Barry not to play with Jane's fridge, as there is potentially confidential information contained within the paperwork on the fridge. Also it's Jane's and staff wanted to ensure that boundary was respected. Barry said he didn't want to (i.e stop what he was doing). Staff asked if that made it ok to do what he was doing. He repeated "don't want to" several times before leaving the fridge and going to his fridge as suggested.
 ```
 
 ### STRUCTURED DATA:
@@ -42,7 +42,7 @@ text: arrived
 timestamp: 15:41
 level: l1
 name: Barry
-text: Barry arranging information sheets on Dre's fridge. Staff asked Barry if he's allowed to play with Dre's fridge. Staff asked Barry not to play with Dre's fridge, as there is potentially confidential information contained within the paperwork on the fridge. Also it's Dre's and staff wanted to ensure that boundary was respected. Barry said he didn't want to (i.e stop what he was doing). Staff asked if that made it ok to do what he was doing. He repeated "don't want to" several times before leaving the fridge and going to his fridge as suggested. It felt as though Barry was testing to see what he could get away with
+text: Barry arranging information sheets on Jane's fridge. Staff asked Barry if he's allowed to play with Jane's fridge. Staff asked Barry not to play with Jane's fridge, as there is potentially confidential information contained within the paperwork on the fridge. Also it's Jane's and staff wanted to ensure that boundary was respected. Barry said he didn't want to (i.e stop what he was doing). Staff asked if that made it ok to do what he was doing. He repeated "don't want to" several times before leaving the fridge and going to his fridge as suggested.
 ---
 ```
 

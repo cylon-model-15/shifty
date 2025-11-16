@@ -5,14 +5,14 @@ set -e
 
 echo "Starting conversion..."
 
-# --- Argument Construction ---
-# Initialize an empty array for arguments
-CMD_ARGS=()
+# --- File Check ---
+# Use ls and grep to count .md files, excluding README.md
+file_count=$(ls *.md 2>/dev/null | grep -v "README.md" | wc -l)
 
-# Pass the names of the environment variables to the Python script
-# The Python script will then read these environment variables
-CMD_ARGS+=(--model-env-var "SHIFTY_MODEL")
-CMD_ARGS+=(--style-guide-env-var "SHIFTY_STYLE_GUIDE")
+if [ "$file_count" -eq 0 ]; then
+    echo "No .md files to process (excluding README.md). Exiting."
+    exit 0
+fi
 
 # --- File Processing Loop ---
 # Loop through all files ending with .md in the current directory
@@ -33,9 +33,9 @@ for md_file in *.md; do
         # Print what is being processed
         echo "Processing: $md_file  ->  $output_file"
         
-        # Run python script with all constructed arguments
+        # Run python script. It will pick up environment variables automatically.
         # Quotes are used to handle filenames with spaces
-        python3 shifty.py --notes-file "$md_file" --output-file "$output_file" "${CMD_ARGS[@]}"
+        python3 shifty.py --notes-file "$md_file" --output-file "$output_file"
     fi
 done
 

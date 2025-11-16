@@ -25,6 +25,12 @@ text: [TEXT]
 - Present the facts chronologically.
 - You SHOULD combine related facts into flowing sentences and add professional context where appropriate, without violating the data boundaries.
 
+### 4. SHORTHAND DEFINITIONS
+- The following is a translation table for shorthand codes that may appear in the notes.
+- When you encounter a code from the table (e.g., in the 'level' field), you must interpret it using its long-form description.
+
+{{SHORTHAND_DEFINITIONS}}
+
 ---
 **STYLE GUIDE (Your primary instructions for formatting and output):**
 {{OPTIONAL_STYLE_GUIDE}}
