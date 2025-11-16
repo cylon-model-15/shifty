@@ -1,43 +1,37 @@
 # Shifty
 
-Shifty is a command-line tool that uses a local Ollama instance to transform raw, timestamped notes into a structured narrative summary. It employs a two-pass system to first extract key facts and then generate a coherent, human-readable report.
+Shifty is a command-line tool that uses a local Ollama instance to transform raw, timestamped shift notes into a professional, structured narrative assessment. It employs a flexible two-pass system and a customizable style guide to generate reports tailored to your needs.
 
 ## Overview
 
 The process works in two main stages:
 
-1.  **Pass 1: Fact Extraction**: The script takes a raw notes file (e.g., a Markdown file) and uses a specified Ollama model to pull out structured facts. This is guided by a prompt template (e.g., `pass1.txt`).
-2.  **Pass 2: Narrative Generation**: The extracted facts from the first pass are then fed into a second prompt template (e.g., `pass2.txt`). The Ollama model uses this to generate a final, polished narrative.
+1.  **Pass 1: Fact Extraction**: The script first runs a linter to validate the format of the raw notes file. If the notes are valid, it uses a specified Ollama model and the `pass1.txt` prompt to extract structured data (timestamp, level, name, text) from the notes.
+2.  **Pass 2: Narrative Generation**: The structured facts from the first pass are then combined with a style guide (e.g., `style_guide.txt`) and fed into the `pass2.txt` prompt. The model uses this combined information to generate the final, polished narrative in the desired format.
 
-The `shifty.sh` script automates this process for all `.md` files in the directory.
+The `shifty.sh` script automates this process for all `.md` files in the directory, using environment variables for configuration.
+
+## Features
+
+-   **Two-Pass System**: Separates fact extraction from narrative generation for more reliable and consistent output.
+-   **Customizable Style Guides**: Control the final output format by providing a style guide. Change the summary structure, add or remove sections, and tailor the output without editing the core prompts.
+-   **Configurable**: Set the Ollama model and style guide via environment variables for easy integration into different workflows.
+-   **Note Linter**: Includes `shifty_linter.py` to automatically check your notes for formatting errors before processing, preventing common issues.
+-   **Caching**: Automatically skips processing if an up-to-date output file already exists. Use the `--force` flag to regenerate.
+-   **Standardized Output**: Generates files with a `.shifty` extension to keep outputs organized.
 
 ## Note Formatting
 
-The raw notes files are expected to follow a specific format for successful processing. Each log entry must start with a timestamp, followed by an assistance level code on the next line, and then any detailed notes.
+The raw notes files are expected to follow a specific format for successful processing. The included linter will check for these rules.
 
-- Each log entry starts with a timestamp (e.g., `07:32 Jake threw a cushion at the fan`).
-- The line *immediately after* the timestamp is the Assistance Level (e.g., `l8`, `lx`, `l_`).
-- All lines *after* the level (until the next timestamp) are details.
+-   The participant's name must be in a level-3 markdown heading (e.g., `### Sam`).
+-   Each log entry must start with a timestamp (e.g., `08:15 Woke up...`).
+-   The line *immediately after* the timestamp line must be the Assistance Level code (e.g., `l8`, `lx`).
+-   All lines *after* the level (until the next timestamp) are considered details for that entry.
 
-### Assistance Level Codes (l#)
+### Example Notes File (`sam.md`)
 
--   `l8`: Completely Independent
--   `l7`: Mostly Independent
--   `l6`: Minor Verbal Prompts
--   `l5`: Verbal Instruction Required
--   `l4`: Modelled
--   `l3`: Significant Assistance
--   `l1`: Refused
--   `l0`: Not Applicable
--   `l_` or `lx`: Unknown/Missing Level
-
-### Amount/Quantity Codes (a#)
-
--   `a_` or `ax`: Unknown/Missing Amount
-
-### Example Notes File
-
-```
+```markdown
 ### Sam
 
 08:15 Woke up and got out of bed
@@ -50,63 +44,25 @@ Needed a verbal prompt to brush teeth.
 09:00 Breakfast
 l8
 Ate a bowl of cereal with milk and a glass of orange juice.
-ax
-
-09:30 Watched morning cartoons
-l0
-
-10:15 Arts and Crafts
-l5
-Required step-by-step instructions to complete the craft.
-
-11:00 Walk in the park
-l8
-Walked for 20 minutes without assistance.
-
-12:30 Lunch
-l8
-Ate a sandwich and an apple.
-
-13:15 Nap
-l0
-
-15:00 Snack time
-l8
-Ate a yogurt.
-
-15:30 Played with building blocks
-l7
-Mostly independent, but needed help to build a taller tower.
-
-16:45 Cleaned up toys
-l6
-Needed verbal prompts to put all the toys away.
-
-17:30 Prepared for dinner
-l0
 ```
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed and running:
-
-*   **Python 3**: The core script is written in Python.
-*   **Ollama**: The script relies on a running Ollama instance. You can download it from [ollama.ai](https://ollama.ai/).
-*   **An Ollama Model**: You need to have a model pulled. The default is `qwen2.5:32b`, but you can specify any model you have available.
+-   **Python 3**: The core script is written in Python.
+-   **Ollama**: A running Ollama instance is required. Download from [ollama.ai](https://ollama.ai/).
+-   **An Ollama Model**: You need a model pulled. The default is `qwen2.5:32b`.
     ```bash
     ollama pull qwen2.5:32b
     ```
-*   **cURL**: The script uses `curl` to communicate with the Ollama API.
+-   **cURL**: The script uses `curl` to communicate with the Ollama API.
 
 ## Usage
 
-There are two ways to use Shifty: the automated batch script or direct execution of the Python script.
+### Batch Processing with `shifty.sh` (Recommended)
 
-### 1. Batch Processing with `shifty.sh`
+This is the simplest method. It finds all `.md` files in the current directory (except `README.md`) and runs the two-pass process on each, saving the output to a corresponding `.shifty` file.
 
-This is the simplest method. It finds all Markdown files (`.md`) in the current directory and runs the two-pass process on each one, saving the output to a corresponding `.txt` file.
-
-1.  Make sure your notes are in `.md` files (e.g., `barry.md`, `jane.md`).
+1.  Make sure your notes are in `.md` files (e.g., `sam.md`, `jane.md`).
 2.  Make the script executable:
     ```bash
     chmod +x shifty.sh
@@ -116,65 +72,71 @@ This is the simplest method. It finds all Markdown files (`.md`) in the current 
     ./shifty.sh
     ```
 
-The script will create `barry.txt` and `jane.txt` with the final narrative summaries.
+The script will create `sam.shifty` and `jane.shifty` with the final narrative summaries.
 
-### 2. Direct Execution with `shifty.py`
+### Direct Execution with `shifty.py`
 
-You can run the Python script directly to process a single file and have more control over the options.
+For more granular control, you can run the Python script directly.
 
 ```bash
-python3 shifty.py --notes-file <path_to_your_notes.md> --output-file <path_to_your_output.txt>
+python3 shifty.py --notes-file <path_to_your_notes.md>
 ```
 
 **Example:**
 
 ```bash
-python3 shifty.py --notes-file barry.md --output-file barry_summary.txt
+python3 shifty.py --notes-file sam.md --output-file sam_summary.shifty
 ```
+
+## Philosophy and Intended Use
+
+**Garbage In, Garbage Out.**
+
+The quality of the final assessment is directly related to the quality of the raw notes you provide. The model is instructed not to infer or invent information that isn't present in the source notes.
+
+The intended workflow is:
+1.  Take brief, shorthand notes during a shift, focusing on capturing key events and observations accurately.
+2.  Run `shifty` to generate a structured, skeleton assessment based on those notes.
+3.  Manually review the generated `.shifty` file, adding more detailed context, professional insights, and any necessary corrections by hand.
+
+Shifty is a tool to accelerate the report-writing process, not to replace the critical thinking and detailed observations of the support worker.
 
 ## Customization
 
-You can customize the behavior by passing arguments to the `shifty.py` script.
+### Configuring the Model and Style Guide (Environment Variables)
 
-### Changing the Model
+The `shifty.sh` script uses environment variables for configuration. This is the recommended way to customize behavior.
 
-Use the `--model` flag to specify a different Ollama model.
-
-```bash
-python3 shifty.py --notes-file barry.md --model llama3:8b
-```
-
-### Setting Model via Environment Variable (shifty.sh)
-
-When using the `shifty.sh` batch script, you can specify the Ollama model by setting the `SHIFTY_MODEL` environment variable. If this variable is set, `shifty.sh` will pass its value to `shifty.py`. If `SHIFTY_MODEL` is not set, `shifty.py` will use its internal default model (`qwen2.5:32b`).
+-   `SHIFTY_MODEL`: Sets the Ollama model to use.
+-   `SHIFTY_STYLE_GUIDE`: Sets the path to a custom style guide file.
 
 ```bash
-# Example: Set the model for a single run
-SHIFTY_MODEL="llama3:8b" ./shifty.sh
+# Example: Use a different model and a custom style guide for a single run
+SHIFTY_MODEL="llama3:8b" SHIFTY_STYLE_GUIDE="my_style_guide.txt" ./shifty.sh
 
-# Example: Export the model for the current session
+# Example: Export the variables for the current session
 export SHIFTY_MODEL="llama3:8b"
+export SHIFTY_STYLE_GUIDE="my_style_guide.txt"
 ./shifty.sh
 ```
 
-### Specifying Custom Prompt Files
+If these variables are not set, the script defaults to the model `qwen2.5:32b` and the `style_guide.txt` file.
 
-Shifty uses two prompt files for its two-pass system. You can point to your own custom prompt files using the `--prompt-file-pass1` and `--prompt-file-pass2` arguments.
+### Command-line Arguments (`shifty.py`)
 
-*   **Pass 1 Prompt**: This file should contain the `{{RAW_NOTES}}` placeholder.
-*   **Pass 2 Prompt**: This file should contain the `{{OBSERVED_FACTS}}` placeholder.
+When running `shifty.py` directly, you can use command-line arguments for customization.
 
-**Example:**
+-   `--model`: Specify a different Ollama model.
+-   `--style-guide-file`: Path to a custom style guide.
+-   `--prompt-file-pass1`, `--prompt-file-pass2`: Paths to custom prompt files.
+-   `--force`: Force regeneration of the output file, ignoring the cache.
 
-```bash
-python3 shifty.py \
-  --notes-file barry.md \
-  --prompt-file-pass1 my_extraction_prompt.txt \
-  --prompt-file-pass2 my_narrative_prompt.txt
-```
+### Customizing Prompts and Style Guides
+
+-   **Pass 1 Prompt (`pass1.txt`)**: This file must contain the `{{RAW_NOTES}}` placeholder.
+-   **Pass 2 Prompt (`pass2.txt`)**: This file must contain `{{OBSERVED_FACTS}}` and `{{OPTIONAL_STYLE_GUIDE}}` placeholders. The content of your style guide will be injected into the `{{OPTIONAL_STYLE_GUIDE}}` location.
+-   **Style Guide (`style_guide.txt`)**: This file contains the desired format for the final output. You can create your own and point to it using the `SHIFTY_STYLE_GUIDE` environment variable or the `--style-guide-file` argument.
 
 ## Model Performance
 
-The default model, `qwen2.5:32b`, is recommended as it has proven to be reliable for the two-pass generation task.
-
-A smaller model (e.g., 7B parameter model) was tested with mixed results. It was prone to hallucinations and failed to reliably follow the prompt instructions accurately. YMMV.
+The default model, `qwen2.5:32b`, is recommended as it has proven to be reliable for the two-pass generation task. Smaller models (e.g., 7B parameters) have been tested with mixed results, sometimes failing to follow instructions accurately.
